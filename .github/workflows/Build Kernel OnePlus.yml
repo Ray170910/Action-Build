@@ -546,7 +546,7 @@ jobs:
 
           echo "使用$MANIFEST_REPO/$MANIFEST_REPO_NAME($MANIFEST_BRANCH)初始化仓库..."
           repo init -u "$BASE_URL" -b "$MANIFEST_BRANCH" -m "${FILE}.xml" --depth=1 --no-clone-bundle --no-tags
-          find .repo/manifests -name '*.xml' -print0 | xargs -0 sed -i '/tradefederation\/prebuilts/d'
+          find .repo/manifests -name '*.xml' -print0 | xargs -0 sed -i -e '/tradefederation\/prebuilts/d' -e '/prebuilts\/asuite/d'
           repo sync -c -j$(nproc) --no-clone-bundle --no-tags --force-sync
           
           KERNEL_REPOS=""
