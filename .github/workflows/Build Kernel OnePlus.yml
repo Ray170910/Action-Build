@@ -740,208 +740,208 @@ jobs:
           echo "manager_branch=$BRANCH" >> "$GITHUB_OUTPUT"
           echo "manager_artifact=$ARTIFACT" >> "$GITHUB_OUTPUT"
 
-      - name: Add ReSukiSU
-        run: |
-          cd kernel_workspace/kernel_platform
-          MANAGER_BRANCH="${{ steps.manager.outputs.manager_branch }}"
-          KSU_META="${{ github.event.inputs.KSU_META }}"
+      # - name: Add ReSukiSU
+      #   run: |
+      #     cd kernel_workspace/kernel_platform
+      #     MANAGER_BRANCH="${{ steps.manager.outputs.manager_branch }}"
+      #     KSU_META="${{ github.event.inputs.KSU_META }}"
 
-          # 必须包含两个分隔符（至少三个字段）
-          if [[ "$(grep -o '/' <<< "$KSU_META" | wc -l)" -lt 2 ]]; then
-            echo "错误: KSU_META 参数缺少必要的分隔符 '/'，格式应为: 分支名/自定义标识(可省略)/提交hash(可省略)"
-            exit 10
-          fi
+      #     # 必须包含两个分隔符（至少三个字段）
+      #     if [[ "$(grep -o '/' <<< "$KSU_META" | wc -l)" -lt 2 ]]; then
+      #       echo "错误: KSU_META 参数缺少必要的分隔符 '/'，格式应为: 分支名/自定义标识(可省略)/提交hash(可省略)"
+      #       exit 10
+      #     fi
 
-          # 解析字段：分支 / 自定义标识 / 手动 hash
-          IFS='/' read -r BRANCH_NAME KSU_CUSTOM_TAG MANUAL_HASH <<< "$KSU_META"
+      #     # 解析字段：分支 / 自定义标识 / 手动 hash
+      #     IFS='/' read -r BRANCH_NAME KSU_CUSTOM_TAG MANUAL_HASH <<< "$KSU_META"
 
-          echo "分支名: $BRANCH_NAME"
-          [[ -n "$KSU_CUSTOM_TAG" ]] && echo "自定义版本标识: $KSU_CUSTOM_TAG" || echo "自定义版本标识: 未启用"
-          [[ -n "$MANUAL_HASH" ]] && echo "手动指定 hash: $MANUAL_HASH" || echo "手动指定 hash: 未启用"
+      #     echo "分支名: $BRANCH_NAME"
+      #     [[ -n "$KSU_CUSTOM_TAG" ]] && echo "自定义版本标识: $KSU_CUSTOM_TAG" || echo "自定义版本标识: 未启用"
+      #     [[ -n "$MANUAL_HASH" ]] && echo "手动指定 hash: $MANUAL_HASH" || echo "手动指定 hash: 未启用"
 
-          curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/${MANAGER_BRANCH}/kernel/setup.sh" | bash -s "$BRANCH_NAME"
-          cd ./KernelSU
+      #     curl -LSs "https://raw.githubusercontent.com/ReSukiSU/ReSukiSU/${MANAGER_BRANCH}/kernel/setup.sh" | bash -s "$BRANCH_NAME"
+      #     cd ./KernelSU
 
-          if [[ -n "$KSU_CUSTOM_TAG" ]]; then
-            echo "KSU_CUSTOM_TAG=$KSU_CUSTOM_TAG" >> "$GITHUB_ENV"
-          fi
-          if [[ -n "$MANUAL_HASH" ]]; then
-            git fetch origin "$BRANCH_NAME" --depth=50
-            git checkout "$MANUAL_HASH"
-          fi
+      #     if [[ -n "$KSU_CUSTOM_TAG" ]]; then
+      #       echo "KSU_CUSTOM_TAG=$KSU_CUSTOM_TAG" >> "$GITHUB_ENV"
+      #     fi
+      #     if [[ -n "$MANUAL_HASH" ]]; then
+      #       git fetch origin "$BRANCH_NAME" --depth=50
+      #       git checkout "$MANUAL_HASH"
+      #     fi
 
-          KSU_VERSION=$(expr $(git rev-list --count "$MANAGER_BRANCH" 2>/dev/null || echo 13000) + 30700)
-          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+      #     KSU_VERSION=$(expr $(git rev-list --count "$MANAGER_BRANCH" 2>/dev/null || echo 13000) + 30700)
+      #     echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
 
-      - name: Apply Patches ReSukiSU
-        env:
-          FILE: ${{ github.event.inputs.FILE }}
-        run: |
-          cd kernel_workspace
-          if [ "${{ github.event.inputs.SUSFS_META }}" != "-1" ]; then
-            SUSFS_META="${{ github.event.inputs.SUSFS_META }}"
-            git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}${{ github.event.inputs.SUSFS_DEV == 'true' && '-dev' || '' }}
-            cd susfs4ksu
-            if [ -n "$SUSFS_META" ]; then
-              if [[ "$SUSFS_META" =~ ^[0-9]+$ ]]; then
-                git checkout HEAD~$SUSFS_META
-              else
-                git checkout "$SUSFS_META"
-              fi
-            else
-              echo "SUSFS_META 为空，使用最新上游 SUSFS"
-            fi
-            cd ..
-          fi
-          if [ "${{ github.event.inputs.RE_KERNEL }}" = "true" ]; then
-            git clone https://github.com/Sakion-Team/Re-Kernel.git
-          fi
-          if [ "${{ github.event.inputs.LZ4_UPDATE }}" = "true" ]; then
-            git clone https://github.com/Numbersf/lz4_oplus.git
-          fi
-          git clone https://github.com/ShirkNeko/SukiSU_patch.git
-          cd kernel_platform
-          if [ "${{ github.event.inputs.SUSFS_META }}" != "-1" ]; then
-            echo "正在拉取susfs补丁"
-            cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
-            cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
-            cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
-          fi
+      # - name: Apply Patches ReSukiSU
+      #   env:
+      #     FILE: ${{ github.event.inputs.FILE }}
+      #   run: |
+      #     cd kernel_workspace
+      #     if [ "${{ github.event.inputs.SUSFS_META }}" != "-1" ]; then
+      #       SUSFS_META="${{ github.event.inputs.SUSFS_META }}"
+      #       git clone https://gitlab.com/simonpunk/susfs4ksu.git -b gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}${{ github.event.inputs.SUSFS_DEV == 'true' && '-dev' || '' }}
+      #       cd susfs4ksu
+      #       if [ -n "$SUSFS_META" ]; then
+      #         if [[ "$SUSFS_META" =~ ^[0-9]+$ ]]; then
+      #           git checkout HEAD~$SUSFS_META
+      #         else
+      #           git checkout "$SUSFS_META"
+      #         fi
+      #       else
+      #         echo "SUSFS_META 为空，使用最新上游 SUSFS"
+      #       fi
+      #       cd ..
+      #     fi
+      #     if [ "${{ github.event.inputs.RE_KERNEL }}" = "true" ]; then
+      #       git clone https://github.com/Sakion-Team/Re-Kernel.git
+      #     fi
+      #     if [ "${{ github.event.inputs.LZ4_UPDATE }}" = "true" ]; then
+      #       git clone https://github.com/Numbersf/lz4_oplus.git
+      #     fi
+      #     git clone https://github.com/ShirkNeko/SukiSU_patch.git
+      #     cd kernel_platform
+      #     if [ "${{ github.event.inputs.SUSFS_META }}" != "-1" ]; then
+      #       echo "正在拉取susfs补丁"
+      #       cp ../susfs4ksu/kernel_patches/50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch ./common/
+      #       cp ../susfs4ksu/kernel_patches/fs/* ./common/fs/
+      #       cp ../susfs4ksu/kernel_patches/include/linux/* ./common/include/linux/
+      #     fi
 
-          if [[ "${{ github.event.inputs.ZRAM }}" == 1* ]]; then
-            echo "正在拉取zram补丁"
-            cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux/
-            cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib/
-            cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto/
-            cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
-          fi
+      #     if [[ "${{ github.event.inputs.ZRAM }}" == 1* ]]; then
+      #       echo "正在拉取zram补丁"
+      #       cp -r ../SukiSU_patch/other/zram/lz4k/include/linux/* ./common/include/linux/
+      #       cp -r ../SukiSU_patch/other/zram/lz4k/lib/* ./common/lib/
+      #       cp -r ../SukiSU_patch/other/zram/lz4k/crypto/* ./common/crypto/
+      #       cp -r ../SukiSU_patch/other/zram/lz4k_oplus ./common/lib/
+      #     fi
 
-          cd ./common
-          SUBLEVEL=$(grep '^SUBLEVEL *=' Makefile | head -n1 | cut -d= -f2 | tr -d ' ')
+      #     cd ./common
+      #     SUBLEVEL=$(grep '^SUBLEVEL *=' Makefile | head -n1 | cut -d= -f2 | tr -d ' ')
 
-          if [ "$KMI" == "android13-5.15" ] && [ "$SUBLEVEL" -lt 123 ]; then
-            echo "修复内核版本为5.15.0~5.15.123仅支持旧版C库造成的一些bug"
-            cp ../../Action-Build/patches/fix_5.15.legacy ./fix_5.15.legacy.patch
-            patch -p1 < fix_5.15.legacy.patch
-            echo "fix_5.15_patch完成"
-          fi
+      #     if [ "$KMI" == "android13-5.15" ] && [ "$SUBLEVEL" -lt 123 ]; then
+      #       echo "修复内核版本为5.15.0~5.15.123仅支持旧版C库造成的一些bug"
+      #       cp ../../Action-Build/patches/fix_5.15.legacy ./fix_5.15.legacy.patch
+      #       patch -p1 < fix_5.15.legacy.patch
+      #       echo "fix_5.15_patch完成"
+      #     fi
 
-          if [[ "${{ env.KV2 }}" == "66" && "${{ env.KV3 }}" -le 6630 && "${{ github.event.inputs.SUSFS_META }}" != "-1" ]]; then
-            TRUSTY_EXISTS="false"
-            if grep -q 'common-modules/trusty' "$GITHUB_WORKSPACE/.repo/manifests_fallback/${FILE}.xml"; then
-              TRUSTY_EXISTS="true"
-            fi
-            if [[ "$TRUSTY_EXISTS" == "false" ]]; then
-              echo "修复内核版本为6.6.0~6.6.30的机型源码及清单中缺失TrustyOS导致的susfs报错"
-              sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
-              sed -i '/#include <trace\/hooks\/fs.h>/d' 50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
-            fi
-          fi
+      #     if [[ "${{ env.KV2 }}" == "66" && "${{ env.KV3 }}" -le 6630 && "${{ github.event.inputs.SUSFS_META }}" != "-1" ]]; then
+      #       TRUSTY_EXISTS="false"
+      #       if grep -q 'common-modules/trusty' "$GITHUB_WORKSPACE/.repo/manifests_fallback/${FILE}.xml"; then
+      #         TRUSTY_EXISTS="true"
+      #       fi
+      #       if [[ "$TRUSTY_EXISTS" == "false" ]]; then
+      #         echo "修复内核版本为6.6.0~6.6.30的机型源码及清单中缺失TrustyOS导致的susfs报错"
+      #         sed -i 's/-32,12 +32,38/-32,11 +32,37/g' 50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
+      #         sed -i '/#include <trace\/hooks\/fs.h>/d' 50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch
+      #       fi
+      #     fi
 
-          if [ "${{ github.event.inputs.SUSFS_META }}" != "-1" ]; then
-            # Fake Patch to fix failures
-            fake_patched=0
-            fake_patched_dist=0
-            fake_patched_swap=0
-            fake_patched_ns=0
-            fake_patched_expand=0
-            if [ "$KMI" = "android15-6.6" ]; then
-              if ! grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
-                echo "未找到 nr_subpages，正在进行补丁修复"
-                sed -i -e '/int ret = 0, copied = 0;/a \\tunsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;' -e '/int ret = 0, copied = 0;/a \\tpagemap_entry_t \*res = NULL;' ./fs/proc/task_mmu.c
-                fake_patched=1
-              fi
-              if ! grep -qxF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
-                echo "未找到 #include <linux/dma-buf.h>，添加缺失的头文件"
-                sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
-              fi
-              if ! grep -qxF '#include <linux/zswap.h>' ./mm/memory.c; then
-                echo "未找到 #include <linux/zswap.h>，添加缺失的头文件"
-                sed -i '/#include <linux\/sched\/sysctl\.h>/a #include <linux\/zswap.h>' ./mm/memory.c
-                fake_patched_swap=1
-              fi
-              if ! grep -qxF '#include <trace/hooks/fs.h>' ./fs/namespace.c && ! grep -qxF 'susfs_def.h' ./fs/namespace.c; then
-                echo "未找到 #include <trace/hooks/fs.h>，添加缺失的头文件"
-                sed -i '/#include <trace\/hooks\/blk\.h>/a #include <trace\/hooks\/fs.h>' ./fs/namespace.c
-                fake_patched_ns=1
-              fi
-              if grep -qF 'if (vma->vm_end > last_vma_end)' ./fs/proc/task_mmu.c && ! grep -qF 'if (vma->vm_end > last_vma_end) {' ./fs/proc/task_mmu.c; then
-                echo "临时展开 last_vma_end if 块，修复匹配问题"
-                perl -i -0pe 's/\t\t\tif \(vma->vm_end > last_vma_end\)\n\t\t\t\tsmap_gather_stats\(vma, &mss, last_vma_end\);/\t\t\tif (vma->vm_end > last_vma_end) {\n\t\t\t\tsmap_gather_stats(vma, \&mss, last_vma_end);\n\t\t\t\tlast_vma_end = vma->vm_end;\n\t\t\t}/' ./fs/proc/task_mmu.c
-                fake_patched_expand=1
-              fi
-            fi
-            if [ "$KMI" = "android14-6.1" ]; then
-              if ! grep -qxF $'\tif (!vma_pages(vma))' ./fs/proc/task_mmu.c; then
-                echo "未找到 vma_pages，正在进行补丁修复"
-                fake_patched=1
-              fi
-              if ! grep -qxF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
-                echo "未找到 #include <linux/dma-buf.h>，添加缺失的头文件"
-                sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
-              fi
-            fi
-            if [ "$KMI" = "android12-5.10" ] || [ "$KMI" = "android13-5.15" ]; then
-              if ! grep -qxF $'\tif (!vma_pages(vma))' ./fs/proc/task_mmu.c; then
-                echo "未找到 vma_pages，正在进行补丁修复"
-                fake_patched=1
-              fi
-            fi
-            if [ "$KMI" = "android13-5.15" ]; then
-              if grep -qxF '#include <linux/swap_slots.h>' ./mm/memory.c && ! grep -qxF '#include <linux/susfs_def.h>' ./mm/memory.c; then
-                echo "发现干扰识别的 swap_slots.h，临时移除"
-                sed -i '/#include <linux\/swap_slots\.h>/d' ./mm/memory.c
-                fake_patched_dist=1
-              fi
-            fi
+      #     if [ "${{ github.event.inputs.SUSFS_META }}" != "-1" ]; then
+      #       # Fake Patch to fix failures
+      #       fake_patched=0
+      #       fake_patched_dist=0
+      #       fake_patched_swap=0
+      #       fake_patched_ns=0
+      #       fake_patched_expand=0
+      #       if [ "$KMI" = "android15-6.6" ]; then
+      #         if ! grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
+      #           echo "未找到 nr_subpages，正在进行补丁修复"
+      #           sed -i -e '/int ret = 0, copied = 0;/a \\tunsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;' -e '/int ret = 0, copied = 0;/a \\tpagemap_entry_t \*res = NULL;' ./fs/proc/task_mmu.c
+      #           fake_patched=1
+      #         fi
+      #         if ! grep -qxF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
+      #           echo "未找到 #include <linux/dma-buf.h>，添加缺失的头文件"
+      #           sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
+      #         fi
+      #         if ! grep -qxF '#include <linux/zswap.h>' ./mm/memory.c; then
+      #           echo "未找到 #include <linux/zswap.h>，添加缺失的头文件"
+      #           sed -i '/#include <linux\/sched\/sysctl\.h>/a #include <linux\/zswap.h>' ./mm/memory.c
+      #           fake_patched_swap=1
+      #         fi
+      #         if ! grep -qxF '#include <trace/hooks/fs.h>' ./fs/namespace.c && ! grep -qxF 'susfs_def.h' ./fs/namespace.c; then
+      #           echo "未找到 #include <trace/hooks/fs.h>，添加缺失的头文件"
+      #           sed -i '/#include <trace\/hooks\/blk\.h>/a #include <trace\/hooks\/fs.h>' ./fs/namespace.c
+      #           fake_patched_ns=1
+      #         fi
+      #         if grep -qF 'if (vma->vm_end > last_vma_end)' ./fs/proc/task_mmu.c && ! grep -qF 'if (vma->vm_end > last_vma_end) {' ./fs/proc/task_mmu.c; then
+      #           echo "临时展开 last_vma_end if 块，修复匹配问题"
+      #           perl -i -0pe 's/\t\t\tif \(vma->vm_end > last_vma_end\)\n\t\t\t\tsmap_gather_stats\(vma, &mss, last_vma_end\);/\t\t\tif (vma->vm_end > last_vma_end) {\n\t\t\t\tsmap_gather_stats(vma, \&mss, last_vma_end);\n\t\t\t\tlast_vma_end = vma->vm_end;\n\t\t\t}/' ./fs/proc/task_mmu.c
+      #           fake_patched_expand=1
+      #         fi
+      #       fi
+      #       if [ "$KMI" = "android14-6.1" ]; then
+      #         if ! grep -qxF $'\tif (!vma_pages(vma))' ./fs/proc/task_mmu.c; then
+      #           echo "未找到 vma_pages，正在进行补丁修复"
+      #           fake_patched=1
+      #         fi
+      #         if ! grep -qxF '#include <linux/dma-buf.h>' ./fs/proc/base.c; then
+      #           echo "未找到 #include <linux/dma-buf.h>，添加缺失的头文件"
+      #           sed -i '/#include <linux\/cpufreq_times.h>/a #include <linux\/dma-buf.h>' ./fs/proc/base.c
+      #         fi
+      #       fi
+      #       if [ "$KMI" = "android12-5.10" ] || [ "$KMI" = "android13-5.15" ]; then
+      #         if ! grep -qxF $'\tif (!vma_pages(vma))' ./fs/proc/task_mmu.c; then
+      #           echo "未找到 vma_pages，正在进行补丁修复"
+      #           fake_patched=1
+      #         fi
+      #       fi
+      #       if [ "$KMI" = "android13-5.15" ]; then
+      #         if grep -qxF '#include <linux/swap_slots.h>' ./mm/memory.c && ! grep -qxF '#include <linux/susfs_def.h>' ./mm/memory.c; then
+      #           echo "发现干扰识别的 swap_slots.h，临时移除"
+      #           sed -i '/#include <linux\/swap_slots\.h>/d' ./mm/memory.c
+      #           fake_patched_dist=1
+      #         fi
+      #       fi
 
-            echo "正在打susfs补丁"
-            patch -p1 < 50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
-            echo "susfs_patch完成"
+      #       echo "正在打susfs补丁"
+      #       patch -p1 < 50_add_susfs_in_gki-${{ env.KANDROID_VERSION }}-${{ env.KERNEL_VERSION }}.patch || true
+      #       echo "susfs_patch完成"
 
-            # Revert
-            if [ "$fake_patched" = 1 ]; then
-              if [ "$KMI" = "android15-6.6" ]; then
-                if grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
-                  sed -i -e '/unsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;/d' -e '/pagemap_entry_t \*res = NULL;/d' ./fs/proc/task_mmu.c
-                fi
-              fi
-              if [ "$KMI" = "android12-5.10" ] || [ "$KMI" = "android13-5.15" ] || [ "$KMI" = "android14-6.1" ]; then
-                if grep -q 'goto[[:space:]]\+show_pad;' ./fs/proc/task_mmu.c; then
-                  sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
-                fi
-              fi
-            fi
-            if [ "$fake_patched_dist" = 1 ]; then
-              if [ "$KMI" = "android13-5.15" ]; then
-                if ! grep -qxF '#include <linux/swap_slots.h>' ./mm/memory.c; then
-                  sed -i '/#ifdef CONFIG_KSU_SUSFS_SUS_MAP/i #include <linux/swap_slots.h>' ./mm/memory.c
-                fi
-              fi
-            fi
-            if [ "$fake_patched_swap" = 1 ]; then
-              if [ "$KMI" = "android15-6.6" ]; then
-                if grep -qxF '#include <linux/zswap.h>' ./mm/memory.c; then
-                  sed -i '/#include <linux\/zswap\.h>/d' ./mm/memory.c
-                fi
-              fi
-            fi
-            if [ "$fake_patched_ns" = 1 ]; then
-              if grep -qxF '#include <trace/hooks/fs.h>' ./fs/namespace.c && ! grep -qxF 'susfs_def.h' ./fs/namespace.c; then
-                sed -i '/#include <trace\/hooks\/fs\.h>/d' ./fs/namespace.c
-              fi
-            fi
-            if [ "$fake_patched_expand" = 1 ]; then
-              if [ "$KMI" = "android15-6.6" ]; then
-                if grep -qF 'if (vma->vm_end > last_vma_end) {' ./fs/proc/task_mmu.c; then
-                  perl -i -0pe 's/\t\t\tif \(vma->vm_end > last_vma_end\) \{\n\t\t\t\tsmap_gather_stats\(vma, &mss, last_vma_end\);\n\t\t\t\tlast_vma_end = vma->vm_end;\n\t\t\t\}/\t\t\tif (vma->vm_end > last_vma_end)\n\t\t\t\tsmap_gather_stats(vma, \&mss, last_vma_end);/' ./fs/proc/task_mmu.c
-                fi
-              fi
-            fi
-          fi
+      #       # Revert
+      #       if [ "$fake_patched" = 1 ]; then
+      #         if [ "$KMI" = "android15-6.6" ]; then
+      #           if grep -qxF $'\tunsigned int nr_subpages = __PAGE_SIZE / PAGE_SIZE;' ./fs/proc/task_mmu.c; then
+      #             sed -i -e '/unsigned int nr_subpages \= __PAGE_SIZE \/ PAGE_SIZE;/d' -e '/pagemap_entry_t \*res = NULL;/d' ./fs/proc/task_mmu.c
+      #           fi
+      #         fi
+      #         if [ "$KMI" = "android12-5.10" ] || [ "$KMI" = "android13-5.15" ] || [ "$KMI" = "android14-6.1" ]; then
+      #           if grep -q 'goto[[:space:]]\+show_pad;' ./fs/proc/task_mmu.c; then
+      #             sed -i -e 's/goto show_pad;/return 0;/' ./fs/proc/task_mmu.c
+      #           fi
+      #         fi
+      #       fi
+      #       if [ "$fake_patched_dist" = 1 ]; then
+      #         if [ "$KMI" = "android13-5.15" ]; then
+      #           if ! grep -qxF '#include <linux/swap_slots.h>' ./mm/memory.c; then
+      #             sed -i '/#ifdef CONFIG_KSU_SUSFS_SUS_MAP/i #include <linux/swap_slots.h>' ./mm/memory.c
+      #           fi
+      #         fi
+      #       fi
+      #       if [ "$fake_patched_swap" = 1 ]; then
+      #         if [ "$KMI" = "android15-6.6" ]; then
+      #           if grep -qxF '#include <linux/zswap.h>' ./mm/memory.c; then
+      #             sed -i '/#include <linux\/zswap\.h>/d' ./mm/memory.c
+      #           fi
+      #         fi
+      #       fi
+      #       if [ "$fake_patched_ns" = 1 ]; then
+      #         if grep -qxF '#include <trace/hooks/fs.h>' ./fs/namespace.c && ! grep -qxF 'susfs_def.h' ./fs/namespace.c; then
+      #           sed -i '/#include <trace\/hooks\/fs\.h>/d' ./fs/namespace.c
+      #         fi
+      #       fi
+      #       if [ "$fake_patched_expand" = 1 ]; then
+      #         if [ "$KMI" = "android15-6.6" ]; then
+      #           if grep -qF 'if (vma->vm_end > last_vma_end) {' ./fs/proc/task_mmu.c; then
+      #             perl -i -0pe 's/\t\t\tif \(vma->vm_end > last_vma_end\) \{\n\t\t\t\tsmap_gather_stats\(vma, &mss, last_vma_end\);\n\t\t\t\tlast_vma_end = vma->vm_end;\n\t\t\t\}/\t\t\tif (vma->vm_end > last_vma_end)\n\t\t\t\tsmap_gather_stats(vma, \&mss, last_vma_end);/' ./fs/proc/task_mmu.c
+      #           fi
+      #         fi
+      #       fi
+      #     fi
 
-          source $REJ_CHECKER
-          check_rejects .
+      #     source $REJ_CHECKER
+      #     check_rejects .
 
       # OGKI转换GKI，无需修改 dtbo 开机
       - name: Apply Convert HMBIRD_OGKI to HMBIRD_GKI
@@ -962,6 +962,27 @@ jobs:
           source $REJ_CHECKER
           check_rejects .
 
+      - name: 🎮 Apply GameSense patches
+        run: |
+          echo "正在下载并应用 GameSense 补丁..."
+          cd kernel_workspace/kernel_platform/common
+          mkdir -p /tmp/gamesense
+          PATCH_FILES=$(curl -LSs -H "Authorization: token ${{ secrets.Patch_TOKEN }}" \
+            "https://api.github.com/repos/Ray170910/--------/contents/patch/5.10?ref=new" \
+            | jq -r '.[] | select(.name | endswith(".patch")) | .name')
+          for patch_name in $PATCH_FILES; do
+            echo "[GameSense] 下载 $patch_name ..."
+            curl -LSs -H "Authorization: token ${{ secrets.Patch_TOKEN }}" \
+              "https://raw.githubusercontent.com/Ray170910/--------/new/patch/5.10/$patch_name" \
+              -o "/tmp/gamesense/$patch_name"
+            if [ -f "/tmp/gamesense/$patch_name" ]; then
+              echo "[GameSense] 应用 $patch_name ..."
+              patch -p1 < "/tmp/gamesense/$patch_name" || \
+              patch -p1 --fuzz=3 < "/tmp/gamesense/$patch_name" || true
+            fi
+          done
+          echo "✅ GameSense 补丁应用完成"
+          
       - name: Apply UNICODE_BYPASS
         if: ${{ github.event.inputs.UNICODE_BYPASS == 'true' }}
         run: |
